@@ -217,6 +217,16 @@ generated keys are returned (as a map)." }
     cols
     (reduce (fn [unique-cols col-name] (conj unique-cols (make-name-unique unique-cols col-name 1))) []  cols)))
 
+(defprotocol IReadResult
+  (read-result [_]))
+
+(extend-protocol IReadResult
+  Object
+  (read-result [x] x)
+
+  nil
+  (read-result [_] nil))
+
 (defn resultset-seq
   "Creates and returns a lazy sequence of maps corresponding to
    the rows in the java.sql.ResultSet rs. Based on clojure.core/resultset-seq
@@ -230,7 +240,7 @@ generated keys are returned (as a map)." }
                  (map (fn [^Integer i] (.getColumnLabel rsmeta i)))
                  make-cols-unique
                  (map (comp keyword *as-key*)))
-          row-values (fn [] (map (fn [^Integer i] (.getObject rs i)) idxs))
+          row-values (fn [] (map (fn [^Integer i] (read-result (.getObject rs i))) idxs))
           ;; This used to use create-struct (on keys) and then struct to populate each row.
           ;; That had the side effect of preserving the order of columns in each row. As
           ;; part of JDBC-15, this was changed because structmaps are deprecated. We don't
