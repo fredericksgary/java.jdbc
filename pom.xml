@@ -2,7 +2,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.gfredericks</groupId>
   <artifactId>java.jdbc</artifactId>
-  <version>0.2.2-p1</version>
+  <version>0.2.3-p2</version>
   <name>${project.artifactId}</name>
 
   <parent>

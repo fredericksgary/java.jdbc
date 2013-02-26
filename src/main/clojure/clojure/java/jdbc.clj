@@ -57,10 +57,18 @@ generated keys are returned (as a map)." }
 (defn as-str
   "Given a naming strategy and a keyword, return the keyword as a
    string per that naming strategy. Given (a naming strategy and)
-   a string, return it as-is."
+   a string, return it as-is.
+   A keyword of the form :x.y is treated as keywords :x and :y,
+   both are turned into strings via the naming strategy and then
+   joined back together so :x.y might become `x`.`y` if the naming
+   strategy quotes identifiers with `."
   [f x]
   (if (instance? clojure.lang.Named x)
-    (f (name x))
+    (let [n (name x)
+          i (.indexOf n (int \.))]
+      (if (= -1 i)
+        (f n)
+        (str/join "." (map f (.split n "\\.")))))
     (str x)))
 
 (defn as-key
@@ -140,35 +148,10 @@ generated keys are returned (as a map)." }
     spec))
 
 (defn- get-connection
-  "Creates a connection to a database. db-spec is a map containing values
-  for one of the following parameter sets:
-
-  Factory:
-    :factory     (required) a function of one argument, a map of params
-    (others)     (optional) passed to the factory function in a map
-
-  DriverManager:
-    :subprotocol (required) a String, the jdbc subprotocol
-    :subname     (required) a String, the jdbc subname
-    :classname   (optional) a String, the jdbc driver class name
-    (others)     (optional) passed to the driver as properties.
-
-  DataSource:
-    :datasource  (required) a javax.sql.DataSource
-    :username    (optional) a String
-    :password    (optional) a String, required if :username is supplied
-
-  JNDI:
-    :name        (required) a String or javax.naming.Name
-    :environment (optional) a java.util.Map
-
-  URI:
-    Parsed JDBC connection string - see below
-  
-  String:
-    subprotocol://user:password@host:post/subname
-                 An optional prefix of jdbc: is allowed."
+  "Creates a connection to a database. db-spec is a map containing connection
+   parameters - see with-connection for full details."
   [{:keys [factory
+           connection-uri
            classname subprotocol subname
            datasource username password
            name environment]
@@ -176,25 +159,35 @@ generated keys are returned (as a map)." }
   (cond
     (instance? URI db-spec)
     (get-connection (parse-properties-uri db-spec))
+    
     (string? db-spec)
     (get-connection (URI. (strip-jdbc db-spec)))
+    
     factory
     (factory (dissoc db-spec :factory))
+    
+    connection-uri
+    (DriverManager/getConnection connection-uri)
+    
     (and subprotocol subname)
     (let [url (format "jdbc:%s:%s" subprotocol subname)
           etc (dissoc db-spec :classname :subprotocol :subname)
           classname (or classname (classnames subprotocol))]
       (clojure.lang.RT/loadClassForName classname)
       (DriverManager/getConnection url (as-properties etc)))
+    
     (and datasource username password)
     (.getConnection ^DataSource datasource ^String username ^String password)
+    
     datasource
     (.getConnection ^DataSource datasource)
+    
     name
     (let [env (and environment (Hashtable. ^Map environment))
           context (InitialContext. env)
           ^DataSource datasource (.lookup context ^String name)]
       (.getConnection datasource))
+    
     :else
     (let [^String msg (format "db-spec %s is missing a required parameter" db-spec)]
       (throw (IllegalArgumentException. msg)))))
@@ -340,7 +333,18 @@ generated keys are returned (as a map)." }
 
   JNDI:
     :name        (required) a String or javax.naming.Name
-    :environment (optional) a java.util.Map"
+    :environment (optional) a java.util.Map
+
+  Raw:
+    :connection-uri (required) a String
+                 Passed directly to DriverManager/getConnection
+
+  URI:
+    Parsed JDBC connection string - see below
+  
+  String:
+    subprotocol://user:password@host:post/subname
+                 An optional prefix of jdbc: is allowed."
   [db-spec & body]
   `(with-connection* ~db-spec (fn [] ~@body)))
 

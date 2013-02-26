@@ -5,54 +5,49 @@ A Clojure wrapper for JDBC-based access to databases.
 
 Formerly known as clojure.contrib.sql.
 
-
-
 Releases and Dependency Information
 ========================================
 
-Latest stable release: 0.2.2
+Latest stable release: 0.2.3
 
 * [All Released Versions](http://search.maven.org/#search%7Cgav%7C1%7Cg%3A%22org.clojure%22%20AND%20a%3A%22java.jdbc%22)
 
 * [Development Snapshot Versions](https://oss.sonatype.org/index.html#nexus-search;gav~org.clojure~java.jdbc~~~)
 
 [Leiningen](https://github.com/technomancy/leiningen) dependency information:
-
-    [org.clojure/java.jdbc "0.2.2"]
-
+```clojure
+[org.clojure/java.jdbc "0.2.3"]
+```
 [Maven](http://maven.apache.org/) dependency information:
-
-    <dependency>
-      <groupId>org.clojure</groupId>
-      <artifactId>java.jdbc</artifactId>
-      <version>0.2.2</version>
-    </dependency>
-
-
+```xml
+<dependency>
+  <groupId>org.clojure</groupId>
+  <artifactId>java.jdbc</artifactId>
+  <version>0.2.3</version>
+</dependency>
+```
 
 Example Usage
 ========================================
+```clojure
+(require '[clojure.java.jdbc :as sql])
 
-    (require '[clojure.java.jdbc :as sql])
-    
-    (def mysql-db {:subprotocol "mysql"
-        :subname "//127.0.0.1:3306/clojure_test"
-        :user "clojure_test"
-        :password "clojure_test"})
-    
-    (sql/with-connection mysql-db
-        (sql/insert-records :fruit
-            {:name "Apple" :appearance "rosy" :cost 24}
-            {:name "Orange" :appearance "round" :cost 49}))
-            
-    (sql/with-connection mysql-db
-        (sql/with-query-results rows
-            ["SELECT * FROM fruit WHERE appearance = ?" "rosy"]
-            (:cost (first rows))))
+(def mysql-db {:subprotocol "mysql"
+               :subname "//127.0.0.1:3306/clojure_test"
+               :user "clojure_test"
+               :password "clojure_test"})
 
+(sql/with-connection mysql-db
+  (sql/insert-records :fruit
+    {:name "Apple" :appearance "rosy" :cost 24}
+    {:name "Orange" :appearance "round" :cost 49}))
+
+(sql/with-connection mysql-db
+  (sql/with-query-results rows
+    ["SELECT * FROM fruit WHERE appearance = ?" "rosy"]
+    (:cost (first rows))))
+```
 For more detail see the [generated documentation on github](http://clojure.github.com/java.jdbc/).
-
-
 
 Developer Information
 ========================================
@@ -83,11 +78,12 @@ Developer Information
 
         $ TEST_DBS=mysql,postgres mvn test
 
-
-
 Change Log
 ====================
 
+* Release 0.2.3 on 2012-06-18
+  * as-str now treats a.b as two identifiers separated by . so quoting produces [a].[b] instead of [a.b]
+  * Add :connection-uri option [JDBC-34](http://dev.clojure.org/jira/browse/JDBC-34)
 * Release 0.2.2 on 2012-06-10
   * Handle Oracle unknown row count affected [JDBC-33](http://dev.clojure.org/jira/browse/JDBC-33)
   * Handle jdbc: prefix in string db-specs [JDBC-32](http://dev.clojure.org/jira/browse/JDBC-32)
@@ -144,8 +140,6 @@ Change Log
   * Return generated keys from insert operations, where possible
   * Add insert-record function
   * Clojure 1.3 compatibility
-
-
 
 Copyright and License
 ========================================
