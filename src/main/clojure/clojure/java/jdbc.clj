@@ -380,9 +380,9 @@ generated keys are returned (as a map)." }
                  (.rollback con)
                  (.commit con))
                result)
-             (catch Exception e
+             (catch Throwable t
                (.rollback con)
-               (throw-non-rte e))
+               (throw-non-rte t))
              (finally
               (rollback false)
               (.setAutoCommit con auto-commit)))))
