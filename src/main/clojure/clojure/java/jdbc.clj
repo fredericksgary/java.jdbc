@@ -458,6 +458,8 @@ generated keys are returned (as a map)." }
    :scroll-insensitive ResultSet/TYPE_SCROLL_INSENSITIVE
    :scroll-sensitive ResultSet/TYPE_SCROLL_SENSITIVE})
 
+(def ^:dynamic *statement-options* nil)
+
 (defn prepare-statement
   "Create a prepared statement from a connection, a SQL string and an
    optional list of parameters:
@@ -466,8 +468,11 @@ generated keys are returned (as a map)." }
      :concurrency :read-only | :updatable
      :fetch-size n
      :max-rows n"
-  [^java.sql.Connection con ^String sql & {:keys [return-keys result-type concurrency cursors fetch-size max-rows]}]
-  (let [^PreparedStatement stmt (cond
+  [^java.sql.Connection con ^String sql & {:as opts}]
+  (let [{:keys [return-keys result-type concurrency cursors fetch-size max-rows]}
+        (merge *statement-options* opts)
+
+        ^PreparedStatement stmt (cond
                                   return-keys (try
                                                 (.prepareStatement con sql java.sql.Statement/RETURN_GENERATED_KEYS)
                                                 (catch Exception _
