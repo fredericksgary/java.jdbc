@@ -364,11 +364,18 @@ made at some future date." }
     (when max-rows (.setMaxRows stmt max-rows))
     stmt))
 
+(defprotocol IParameter
+  (coerce-parameter [this]))
+
+(extend-protocol IParameter
+  Object (coerce-parameter [o] o)
+  nil (coerce-parameter [_] nil))
+
 (defn- set-parameters
   "Add the parameters to the given statement."
   [^PreparedStatement stmt params]
   (dorun (map-indexed (fn [ix value]
-                        (.setObject stmt (inc ix) value))
+                        (.setObject stmt (inc ix) (coerce-parameter value)))
                       params)))
 
 (defn print-sql-exception
