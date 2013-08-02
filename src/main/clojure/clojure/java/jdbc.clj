@@ -364,11 +364,27 @@ made at some future date." }
     (when max-rows (.setMaxRows stmt max-rows))
     stmt))
 
+(defprotocol ISQLParameter
+  "Protocol for writing a parameter to a PreparedStatement. Uses
+   .setObject by default by can be overridden on a type-by-type basis
+   in case custom behavior is needed."
+  (write-to-statement [this stmt idx]
+    "Protocol function to write a parameter to a PreparedStatement.
+     Will be passed the statement and the index for this parameter."))
+
+(extend-protocol ISQLParameter
+  Object
+  (write-to-statement [this ^PreparedStatement stmt idx]
+    (.setObject stmt idx this))
+  nil
+  (write-to-statement [this ^PreparedStatement stmt idx]
+    (.setObject stmt idx this)))
+
 (defn- set-parameters
   "Add the parameters to the given statement."
   [^PreparedStatement stmt params]
   (dorun (map-indexed (fn [ix value]
-                        (.setObject stmt (inc ix) value))
+                        (write-to-statement value stmt (inc ix)))
                       params)))
 
 (defn print-sql-exception
